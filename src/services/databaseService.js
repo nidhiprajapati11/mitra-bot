@@ -1,11 +1,11 @@
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
-  getDocs, 
-  doc, 
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs,
+  doc,
   getDoc,
   addDoc,
   updateDoc,
@@ -69,11 +69,11 @@ export const searchProfessionals = async (filters = {}) => {
     }
 
     // Limit results
-    constraints.push(limit(filters.limit || 10));
+    constraints.push(limit(filters.limit || 50));
 
     q = query(q, ...constraints);
     const snapshot = await getDocs(q);
-    
+
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -88,7 +88,7 @@ export const getProfessionalById = async (professionalId) => {
   try {
     const docRef = doc(db, 'professionals', professionalId);
     const docSnap = await getDoc(docRef);
-    
+
     if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() };
     } else {
@@ -100,43 +100,46 @@ export const getProfessionalById = async (professionalId) => {
   }
 };
 
-export const getProfessionalsByCategory = async (category, limitCount = 50) => {
+export const getProfessionalsByCategory = async (category, limitCount = 200) => {
   try {
     console.log(`Fetching professionals for category: ${category}`);
-    
+
     // Map category labels to professional_type_id
     const categoryToTypeId = {
       'mbbs': '3',
       'mental': '1',
       'legal': '2',
       'placement': '4',
-      'pathology': '5'
+      'pathology': '5',
+      'pharmacy': '6'
     };
-    
+
     const professionalTypeId = categoryToTypeId[category];
-    
+
     if (!professionalTypeId) {
-      console.warn(`Unknown category: ${category}, fetching all professionals`);
-      const snapshot = await getDocs(collection(db, 'professionals'));
+      const snapshot = await getDocs(query(collection(db, 'professionals'), limit(limitCount)));
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      })).slice(0, limitCount);
+      }));
     }
-    
+
     // Query by professional_type_id
     const q = query(
       collection(db, 'professionals'),
       where('professional_type_id', '==', professionalTypeId),
+      // orderBy('rating', 'desc'), 
+      orderBy('professional_type_id'),
       limit(limitCount)
     );
-    
+
     const snapshot = await getDocs(q);
     const professionals = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-    
+
+
     console.log(`Found ${professionals.length} professionals with type_id: ${professionalTypeId}`);
     if (professionals.length > 0) {
       console.log('Sample professional:', professionals[0]);
@@ -144,8 +147,6 @@ export const getProfessionalsByCategory = async (category, limitCount = 50) => {
     return professionals;
   } catch (error) {
     console.error('Error getting professionals by category:', error);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
     throw error;
   }
 };
@@ -154,20 +155,20 @@ export const getProfessionalsByCategory = async (category, limitCount = 50) => {
 export const getAllDoctors = async (limitCount = 50) => {
   try {
     console.log('Fetching all doctors...');
-    
+    const professionalTypeId = '3';
     // Query by professional_type_id = "3" (MBBS/Surgeons)
     const q = query(
       collection(db, 'professionals'),
-      where('professional_type_id', '==', '3'),
+      where('professional_type_id', '==', professionalTypeId),
       limit(limitCount)
     );
-    
+
     const snapshot = await getDocs(q);
     const doctors = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-    
+
     console.log(`Found ${doctors.length} doctors`);
     return doctors;
   } catch (error) {
@@ -234,7 +235,7 @@ export const searchJobs = async (filters = {}) => {
 
     q = query(q, ...constraints);
     const snapshot = await getDocs(q);
-    
+
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -249,7 +250,7 @@ export const getJobById = async (jobId) => {
   try {
     const docRef = doc(db, 'placements', jobId);
     const docSnap = await getDoc(docRef);
-    
+
     if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() };
     } else {
@@ -271,7 +272,7 @@ export const createBooking = async (bookingData) => {
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now()
     };
-    
+
     const docRef = await addDoc(collection(db, 'bookings'), booking);
     return { id: docRef.id, ...booking };
   } catch (error) {
@@ -294,7 +295,7 @@ export const getUserBookings = async (userId, status = null) => {
 
     q = query(q, ...constraints);
     const snapshot = await getDocs(q);
-    
+
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -330,7 +331,7 @@ export const getActiveConsultations = async (userId) => {
       orderBy('scheduled_time', 'asc'),
       limit(10)
     );
-    
+
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
       id: doc.id,
@@ -348,7 +349,7 @@ export const getUserProfile = async (userId) => {
   try {
     const docRef = doc(db, 'users', userId);
     const docSnap = await getDoc(docRef);
-    
+
     if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() };
     } else {
@@ -385,7 +386,7 @@ export const getProfessionalAvailability = async (professionalId, startDate, end
       where('start_date', '<=', endDate),
       orderBy('start_date', 'asc')
     );
-    
+
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
       id: doc.id,
@@ -406,7 +407,7 @@ export const getActiveSpecializations = async () => {
       where('isActive', '==', true),
       orderBy('name', 'asc')
     );
-    
+
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
       id: doc.id,
@@ -464,7 +465,7 @@ export const searchAll = async (searchTerm, filters = {}) => {
     // Search specializations
     if (!filters.excludeSpecializations) {
       const specializationsQuery = await getActiveSpecializations();
-      results.specializations = specializationsQuery.filter(spec => 
+      results.specializations = specializationsQuery.filter(spec =>
         spec.name.toLowerCase().includes(searchTerm.toLowerCase())
       ).slice(0, 5);
     }
@@ -503,7 +504,7 @@ export const createNotification = async (userId, notification) => {
       read: false,
       createdAt: Timestamp.now()
     };
-    
+
     const docRef = await addDoc(collection(db, 'notifications'), notificationData);
     return { id: docRef.id, ...notificationData };
   } catch (error) {
@@ -520,7 +521,7 @@ export const getUserNotifications = async (userId, limit = 10) => {
       orderBy('createdAt', 'desc'),
       limit(limit)
     );
-    
+
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
       id: doc.id,
@@ -540,7 +541,7 @@ export const subscribeToBookingUpdates = (userId, callback) => {
     where('clientId', '==', userId),
     orderBy('appointmentDate', 'desc')
   );
-  
+
   return onSnapshot(q, (snapshot) => {
     const bookings = snapshot.docs.map(doc => ({
       id: doc.id,
@@ -557,7 +558,7 @@ export const subscribeToNotifications = (userId, callback) => {
     where('read', '==', false),
     orderBy('createdAt', 'desc')
   );
-  
+
   return onSnapshot(q, (snapshot) => {
     const notifications = snapshot.docs.map(doc => ({
       id: doc.id,

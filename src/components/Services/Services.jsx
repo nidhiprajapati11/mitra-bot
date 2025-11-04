@@ -43,32 +43,32 @@ const Services = () => {
           
         case 'general_doctor':
         case 'specialist_care':
-          results = await getProfessionalsByCategory('mbbs', 20);
+          results = await getProfessionalsByCategory('mbbs', 100);
           console.log('Healthcare professionals:', results);
           break;
           
         case 'mental_health':
-          results = await getProfessionalsByCategory('mental', 20);
+          results = await getProfessionalsByCategory('mental', 100);
           console.log('Mental health professionals:', results);
           break;
           
         case 'legal_aid':
-          results = await getProfessionalsByCategory('legal', 20);
+          results = await getProfessionalsByCategory('legal', 100);
           console.log('Legal professionals:', results);
           break;
           
         case 'lab_tests':
-          results = await getProfessionalsByCategory('pathology', 20);
+          results = await getProfessionalsByCategory('pathology', 100);
           console.log('Pathology labs:', results);
           break;
           
         case 'pharmacy':
-          results = await getProfessionalsByCategory('pharmacy', 20);
+          results = await getProfessionalsByCategory('pharmacy', 100);
           console.log('Pharmacies:', results);
           break;
           
         default:
-          results = await searchProfessionals({ limit: 20 });
+          results = await searchProfessionals({ limit: 100 });
       }
       
       setSearchResults(results);

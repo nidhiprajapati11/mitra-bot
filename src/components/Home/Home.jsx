@@ -10,6 +10,7 @@ import ServiceOptionsCard from '../Services/ServiceOptionsCard';
 import WeatherCard from '../Common/WeatherCard';
 import NewsCard from '../Common/NewsCard';
 import chatbotService from '../../services/chatbotService';
+import { getProfessionalTypes } from '../../services/databaseService';
 
 const Home = () => {
   const [messages, setMessages] = useState([]);
@@ -17,6 +18,7 @@ const Home = () => {
   const [showServiceSelector, setShowServiceSelector] = useState(false);
   const [showServiceOptions, setShowServiceOptions] = useState(true);
   const [showNewsCard, setShowNewsCard] = useState(true);
+  const [professionalTypesMap, setProfessionalTypesMap] = useState({});
   const [inputText, setInputText] = useState('');
   const { t } = useLanguage();
   const { currentUser } = useAuth();
@@ -34,7 +36,24 @@ const Home = () => {
   useEffect(() => {
     // Initialize with empty messages - greeting is now in weather card
     setMessages([]);
-  }, [t]);
+
+    // --- START: PROFESSIONAL TYPES MAP LOADING ---
+    const loadProfessionalTypes = async () => {
+      try {
+        const types = await getProfessionalTypes();
+        const map = types.reduce((acc, type) => {
+          acc[type.id] = type.title || type.label;
+          return acc;
+        }, {});
+        setProfessionalTypesMap(map);
+        console.log(' Professional Types Map loaded:', map);
+      } catch (error) {
+        console.error('Error loading professional types:', error);
+      }
+    };
+    loadProfessionalTypes();
+    // --- END: PROFESSIONAL TYPES MAP LOADING ---
+  }, [t]); // Depend on 't' for language changes, effectively running once on mount
 
   const addMessage = (text, sender = 'user', quickReplies = null, data = null) => {
     const newMessage = {
@@ -53,7 +72,7 @@ const Home = () => {
 
     const userMessage = inputText.trim();
     setInputText('');
-    
+
     // Add user message
     addMessage(userMessage);
 
@@ -64,13 +83,13 @@ const Home = () => {
       // Process user message and generate intelligent bot response
       const botResponse = await generateBotResponse(userMessage);
       setIsTyping(false);
-      
+
       // Add bot response with any additional data
       addMessage(botResponse.text, 'bot', botResponse.quickReplies, botResponse.data);
     } catch (error) {
       console.error('Error in handleSendMessage:', error);
       setIsTyping(false);
-      
+
       // Add error fallback message
       addMessage(
         "I'm sorry, I encountered an issue. Please try asking again or contact support if the problem persists.",
@@ -88,7 +107,7 @@ const Home = () => {
     try {
       // Use the intelligent chatbot service
       const response = await chatbotService.generateResponse(userInput, currentUser?.uid);
-      
+
       // Convert the intelligent response format to our UI format
       return {
         text: response.text,
@@ -100,7 +119,7 @@ const Home = () => {
       };
     } catch (error) {
       console.error('Error generating bot response:', error);
-      
+
       // Fallback to simple responses if the intelligent service fails
       return {
         text: "I apologize, but I'm having trouble processing your request right now. How can I help you today?",
@@ -123,7 +142,7 @@ const Home = () => {
 
   const handleDataAction = async (action, data) => {
     setIsTyping(true);
-    
+
     try {
       switch (action) {
         case 'book':
@@ -132,24 +151,24 @@ const Home = () => {
           setIsTyping(false);
           addMessage(bookingResponse.text, 'bot', bookingResponse.quickReplies, bookingResponse.data);
           break;
-          
+
         case 'apply':
           addMessage(`I'd like to apply for ${data.title} at ${data.company}`);
           const applyResponse = await generateBotResponse(`Apply for ${data.title} position`);
           setIsTyping(false);
           addMessage(applyResponse.text, 'bot', applyResponse.quickReplies, applyResponse.data);
           break;
-          
+
         case 'view_details':
           addMessage(`Show me more details about ${data.name || data.jobTitle || data.title}`);
           setIsTyping(false);
           // Create a detailed view message with just this single item
-          const detailsText = data.jobTitle ? 
+          const detailsText = data.jobTitle ?
             `Here are the complete details for the ${data.jobTitle} position:` :
             `Here are the complete details for ${data.name}:`;
           addMessage(detailsText, 'bot', [], [data]); // Pass single item in array
           break;
-          
+
         default:
           setIsTyping(false);
           addMessage("I can help you with that. What would you like to know?", 'bot');
@@ -166,7 +185,7 @@ const Home = () => {
     setShowServiceOptions(false);
     setShowNewsCard(false);
     addMessage(option.text, 'user');
-    
+
     // Add user message first
     setTimeout(() => {
       handleServiceSelection(option.action);
@@ -184,12 +203,12 @@ const Home = () => {
       // Use the intelligent chatbot service for quick replies too
       const botResponse = await generateBotResponse(reply.text);
       setIsTyping(false);
-      
+
       addMessage(botResponse.text, 'bot', botResponse.quickReplies, botResponse.data);
     } catch (error) {
       console.error('Error in handleQuickReply:', error);
       setIsTyping(false);
-      
+
       // Fallback for specific actions that need custom handling
       switch (reply.action) {
         case 'other_services':
@@ -288,7 +307,7 @@ const Home = () => {
         { text: 'Help with resume', action: 'resume_help' },
         { text: 'Find more jobs', action: 'more_jobs' },
         { text: 'Career counseling', action: 'career_counseling' },
-        { text: 'Back to services', action: 'back_to_services' }
+        // { text: 'Back to services', action: 'back_to_services' }
       ]
     );
   };
@@ -313,7 +332,7 @@ const Home = () => {
     setShowServiceOptions(true);
     setShowNewsCard(true);
     setIsTyping(false);
-    
+
     // Scroll to top to show the service options
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -369,23 +388,23 @@ const Home = () => {
     );
 
     setIsTyping(true);
-    
+
     try {
       // Fetch all active jobs from database
       const { searchJobs } = await import('../../services/databaseService');
       const jobs = await searchJobs({ limit: 50 });
-      
+
       console.log('Fetched jobs:', jobs);
-      
+
       setIsTyping(false);
-      
+
       if (jobs.length === 0) {
         addMessage(
           "I couldn't find any active job postings at the moment. Please try again later or contact support.",
           'bot',
           [
             { text: 'Try again', action: 'job_search' },
-            { text: '← Back to Services', action: 'back_to_services' }
+            // { text: '← Back to Services', action: 'back_to_services' }
           ]
         );
       } else {
@@ -393,7 +412,7 @@ const Home = () => {
           `Found ${jobs.length} job opportunities. Click on any card below to view details or apply.`,
           'bot',
           [
-            { text: '← Back to Services', action: 'back_to_services' }
+            // { text: '← Back to Services', action: 'back_to_services' }
           ],
           jobs // Pass jobs as data
         );
@@ -407,7 +426,7 @@ const Home = () => {
         'bot',
         [
           { text: 'Try again', action: 'job_search' },
-          { text: '← Back to Services', action: 'back_to_services' }
+          // { text: '← Back to Services', action: 'back_to_services' }
         ]
       );
     }
@@ -428,7 +447,7 @@ const Home = () => {
         { text: 'Apply to first job', action: 'apply_job_1' },
         { text: 'See more details', action: 'job_details' },
         { text: 'Filter by location', action: 'filter_location' },
-        { text: 'Back to services', action: 'back_to_services' }
+        // { text: 'Back to services', action: 'back_to_services' }
       ]
     );
   };
@@ -530,33 +549,39 @@ const Home = () => {
     );
 
     setIsTyping(true);
-    
+
     try {
       // Use 'mbbs' as the category label for doctors/surgeons
       const { getProfessionalsByCategory } = await import('../../services/databaseService');
-      const doctors = await getProfessionalsByCategory('mbbs', 50);
-      
+      const doctors = await getProfessionalsByCategory('mbbs', 100);
+
       console.log('Fetched doctors:', doctors);
-      
+
       setIsTyping(false);
-      
+
       if (doctors.length === 0) {
         addMessage(
           "I couldn't find any doctors at the moment. This might be a database issue. Please contact support.",
           'bot',
           [
             { text: 'Try again', action: 'general_doctor' },
-            { text: 'Back to services', action: 'back_to_services' }
+            // { text: 'Back to services', action: 'back_to_services' }
           ]
         );
       } else {
+        // ATTACH TITLE: professional_type_id ko title se map karein
+        const doctorsWithTitles = doctors.map(doc => ({
+          ...doc,
+          professional_type_label: professionalTypesMap[doc.professional_type_id] || 'Healthcare Professional'
+        }));
+        console.log('Doctors with titles:', doctorsWithTitles);
         addMessage(
-          `Found ${doctors.length} healthcare professionals. Click on any card below to view details or book an appointment.`,
+          `Found ${doctorsWithTitles.length} healthcare professionals. Click on any card below to view details or book an appointment.`,
           'bot',
           [
-            { text: '← Back to Services', action: 'back_to_services' }
+            // { text: '← Back to Services', action: 'back_to_services' }
           ],
-          doctors // Pass doctors as data
+          doctorsWithTitles // Pass mapped data
         );
       }
     } catch (error) {
@@ -568,7 +593,7 @@ const Home = () => {
         'bot',
         [
           { text: 'Try again', action: 'general_doctor' },
-          { text: 'Back to services', action: 'back_to_services' }
+          // { text: 'Back to services', action: 'back_to_services' }
         ]
       );
     }
@@ -581,33 +606,39 @@ const Home = () => {
     );
 
     setIsTyping(true);
-    
+
     try {
       // Use 'mental' as the category label for mental health professionals
       const { getProfessionalsByCategory } = await import('../../services/databaseService');
-      const counselors = await getProfessionalsByCategory('mental', 50);
-      
+      const counselors = await getProfessionalsByCategory('mental', 100);
+
       console.log('Fetched mental health professionals:', counselors);
-      
+
       setIsTyping(false);
-      
+
       if (counselors.length === 0) {
         addMessage(
           "I couldn't find any mental health professionals at the moment. Please try again later or contact support.",
           'bot',
           [
             { text: 'Try again', action: 'mental_health' },
-            { text: 'Back to services', action: 'back_to_services' }
+            // { text: 'Back to services', action: 'back_to_services' }
           ]
         );
       } else {
+        // ATTACH TITLE: professional_type_id ko title se map karein
+        const counselorsWithTitles = counselors.map(doc => ({
+          ...doc,
+          professional_type_label: professionalTypesMap[doc.professional_type_id] || 'Mental Health Professional'
+        }));
+
         addMessage(
-          `Found ${counselors.length} mental health professionals. Click on any card below to view details or book an appointment.`,
+          `Found ${counselorsWithTitles.length} mental health professionals. Click on any card below to view details or book an appointment.`,
           'bot',
           [
-            { text: '← Back to Services', action: 'back_to_services' }
+            // { text: '← Back to Services', action: 'back_to_services' }
           ],
-          counselors // Pass counselors as data
+          counselorsWithTitles // Pass mapped data
         );
       }
     } catch (error) {
@@ -619,7 +650,7 @@ const Home = () => {
         'bot',
         [
           { text: 'Try again', action: 'mental_health' },
-          { text: 'Back to services', action: 'back_to_services' }
+          // { text: 'Back to services', action: 'back_to_services' }
         ]
       );
     }
@@ -651,15 +682,15 @@ const Home = () => {
   const handleServiceSelection = async (service) => {
     setShowServiceSelector(false);
     setShowServiceOptions(false);
-    
+
     // Handle both object and string inputs
     const serviceName = typeof service === 'string' ? service : service.name || service.text;
     const serviceId = typeof service === 'string' ? service : service.id || service.action;
-    
+
     if (serviceName) {
       addMessage(serviceName);
     }
-    
+
     // Process the selected service
     setIsTyping(true);
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -690,7 +721,7 @@ const Home = () => {
           [
             { text: 'Yes, show providers', action: 'show_providers' },
             { text: 'Filter by distance', action: 'filter_distance' },
-            { text: 'Back to services', action: 'back_to_services' }
+            // { text: 'Back to services', action: 'back_to_services' }
           ]
         );
     }
@@ -748,6 +779,8 @@ const Home = () => {
     );
   };
 
+  // ... (rest of the file content like handleJobSearch, handleSlotConfirmation, etc.)
+
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Chat Messages */}
@@ -756,28 +789,28 @@ const Home = () => {
         <div className="mb-4">
           <WeatherCard />
         </div>
-        
+
         {/* News Card - Show community updates only when no service selected */}
         {showNewsCard && messages.length === 0 && (
           <div className="mb-4">
             <NewsCard />
           </div>
         )}
-        
+
         {/* Service Options Chips - Show when no conversation started */}
         {showServiceOptions && messages.length === 0 && (
           <div className="message-slide-in">
             <ServiceOptionsCard onOptionSelect={handleServiceOptionSelect} />
           </div>
         )}
-        
+
         {/* Messages with reduced spacing when following weather card */}
         <div className={messages.length > 0 ? 'space-y-4' : ''}>
           {messages.map((message) => (
             <div key={message.id} className="message-slide-in">
               <MessageBubble message={message} onDataAction={handleDataAction} />
               {message.quickReplies && (
-                <QuickReplies 
+                <QuickReplies
                   replies={message.quickReplies}
                   onReplyClick={handleQuickReply}
                 />
@@ -785,13 +818,22 @@ const Home = () => {
             </div>
           ))}
         </div>
-        
+
         {isTyping && (
           <div className="mt-4">
             <TypingIndicator />
           </div>
         )}
-        
+        {messages.length > 0 && (
+          <div className="mt-6 mb-4 flex ">
+            <button
+              onClick={handleBackToServices}
+              className="flex items-center gap-2 px-4 py-2 border border-primary-200 text-primary-700 rounded-full hover:bg-gray-100 transition-colors shadow-sm text-sm font-medium"
+            >
+              ← Back to Services
+            </button>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 

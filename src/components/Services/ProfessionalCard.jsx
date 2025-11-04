@@ -26,7 +26,7 @@ const ProfessionalCard = ({ professional, serviceType }) => {
     const workArrangement = professional.workArrangement || professional.work_arrangement || [];
     const requirements = professional.requirements || professional.skills || [];
     const jobType = professional.jobType || professional.job_type || professional.employment_type || '';
-    
+
     return (
       <div className="bg-white rounded-lg shadow-sm border p-4 service-card hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between mb-3">
@@ -48,11 +48,11 @@ const ProfessionalCard = ({ professional, serviceType }) => {
           {(salaryMin > 0 || salaryMax > 0) && (
             <div className="flex items-center text-sm text-gray-600">
               <span className="mr-1">💰</span>
-              {salaryMin > 0 && salaryMax > 0 
-                ? `₹${(salaryMin/100000).toFixed(1)} - ${(salaryMax/100000).toFixed(1)} LPA`
-                : salaryMin > 0 
-                  ? `From ₹${(salaryMin/100000).toFixed(1)} LPA`
-                  : `Up to ₹${(salaryMax/100000).toFixed(1)} LPA`
+              {salaryMin > 0 && salaryMax > 0
+                ? `₹${(salaryMin / 100000).toFixed(1)} - ${(salaryMax / 100000).toFixed(1)} LPA`
+                : salaryMin > 0
+                  ? `From ₹${(salaryMin / 100000).toFixed(1)} LPA`
+                  : `Up to ₹${(salaryMax / 100000).toFixed(1)} LPA`
               }
             </div>
           )}
@@ -105,7 +105,7 @@ const ProfessionalCard = ({ professional, serviceType }) => {
 
   if (isPharmacy) {
     const pharmacyServices = professional.services || [];
-    
+
     return (
       <div className="bg-white rounded-lg shadow-sm border p-4 service-card">
         <div className="flex items-start justify-between mb-3">
@@ -161,18 +161,20 @@ const ProfessionalCard = ({ professional, serviceType }) => {
     );
   }
 
-  // Default professional card (doctors, counselors, etc.)
-  // Handle professional data from Firebase
-  const name = professional.name || professional.fullName || professional.doctorName || 'Professional';
-  const specialty = professional.specialty || professional.specialization || professional.category || '';
-  const experience = professional.experience || professional.yearsOfExperience || professional.experienceYears || 'N/A';
+  const fullName = `${professional.first_name || ''} ${professional.last_name || ''}`.trim();
+  const name = fullName || professional.username || professional.name || 'Professional';
+  const specialty = professional.professional_type_label
+    || professional.specialization
+    || professional.category
+    || '';
+  const experience = professional.years_of_experience || professional.experience || 'N/A';
   const rating = professional.rating || professional.averageRating || 0;
-  const fee = professional.fee || professional.consultationFee || professional.price || 'Contact for fee';
-  const languages = professional.languages || professional.languagesSpoken || ['English'];
-  const isLGBTQFriendly = professional.isLGBTQFriendly || professional.lgbtqFriendly || professional.inclusive || false;
-  const availability = professional.availability || professional.availableSlots || professional.slots || [];
-  const location = professional.location || professional.address || professional.city || 'Location not specified';
-  
+  const fee = professional.hourly_rate || professional.fee || 'Contact for fee';
+  const languages = professional.languages_spoken || professional.languages || ['English'];
+  const isLGBTQFriendly = professional.sensitize || professional.isLGBTQFriendly || false;
+  const availability = professional.availableSlots || professional.slots || [];
+  const location = professional.address || professional.location || 'Location not specified';
+
   return (
     <div className="bg-white rounded-lg shadow-sm border p-4 service-card hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-3">
@@ -181,7 +183,7 @@ const ProfessionalCard = ({ professional, serviceType }) => {
           <p className="text-sm text-gray-600">{specialty}</p>
           <p className="text-xs text-gray-500">{experience} years experience</p>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {isLGBTQFriendly && (
             <HeartIcon className="h-5 w-5 text-secondary" title="LGBTQAI+ Friendly" />
@@ -200,7 +202,7 @@ const ProfessionalCard = ({ professional, serviceType }) => {
           <span className="mr-1">💰</span>
           Fee: {typeof fee === 'number' ? `₹${fee}` : fee}
         </div>
-        
+
         {languages && languages.length > 0 && (
           <div className="flex items-center text-sm text-gray-600">
             <LanguageIcon className="h-4 w-4 mr-1" />

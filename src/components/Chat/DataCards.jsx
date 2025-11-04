@@ -35,7 +35,7 @@ const ProfessionalCard = ({ professional, onBook, onViewDetails }) => {
   
   // Additional fields for expanded view
   const specialization = professional.specialization || '';
-  const professionalTypeLabel = professional.professional_type_label || '';
+  const professionalTypeLabel = professional.professional_type_label || professional.professional_type_id || '';
   const clinicName = professional.clinic_name || '';
   const consultationMode = professional.consultation_mode || '';
   const availableSlots = professional.available_slots || [];
@@ -64,9 +64,9 @@ const ProfessionalCard = ({ professional, onBook, onViewDetails }) => {
                 {education && (
                   <p className="text-xs text-gray-600 truncate">{education}</p>
                 )}
-                {specialization && (
+                {specialization || professionalTypeLabel && (
                   <span className="inline-block mt-1 px-2 py-0.5 bg-primary-50 text-primary-700 rounded text-xs font-medium">
-                    {specialization}
+                    {specialization || professionalTypeLabel}
                   </span>
                 )}
               </div>
@@ -147,9 +147,9 @@ const ProfessionalCard = ({ professional, onBook, onViewDetails }) => {
                 {education && (
                   <p className="text-sm text-gray-600 font-medium mb-1">{education}</p>
                 )}
-                {specialization && (
+                {specialization || professionalTypeLabel && (
                   <span className="inline-block px-2.5 py-1 bg-primary-50 text-primary-700 rounded-md text-xs font-semibold">
-                    {specialization}
+                    {specialization || professionalTypeLabel}
                   </span>
                 )}
               </div>
@@ -727,15 +727,15 @@ const JobCard = ({ job, onApply, onViewDetails }) => {
       
       {/* Action Buttons */}
       <div className="flex gap-3 mt-4">
-        <button
+        {/* <button
           onClick={() => onApply(job)}
           className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-4 rounded-xl font-bold hover:from-green-700 hover:to-emerald-700 active:scale-95 transition-all shadow-lg hover:shadow-xl"
         >
           ✓ Apply Now
-        </button>
+        </button> */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="px-4 py-3 border-2 border-green-400 text-green-700 font-bold rounded-xl hover:bg-green-50 active:scale-95 transition-all flex items-center gap-2 shadow-md"
+          className="w-full justify-center px-4 py-3 border-2 border-green-400 text-green-700 font-bold rounded-xl hover:bg-green-50 active:scale-95 transition-all flex items-center gap-2 shadow-md"
         >
           {isExpanded ? (
             <>
@@ -755,7 +755,7 @@ const JobCard = ({ job, onApply, onViewDetails }) => {
 };
 
 const DataCards = ({ data, type, onAction }) => {
-  const [visibleCount, setVisibleCount] = React.useState(5);
+  const [visibleCount, setVisibleCount] = React.useState(20);
   
   if (!data || data.length === 0) return null;
 
