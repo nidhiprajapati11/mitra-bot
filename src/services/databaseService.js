@@ -15,11 +15,24 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 
+const USERS_COLLECTION = 'users';
+const PROFESSIONALS_COLLECTION = 'professionals';
+const PROFESSIONAL_TYPES_COLLECTION = 'professional_types';
+
+const CATEGORY_TO_TYPE_ID_MAP = {
+  'mbbs': '3',
+  'mental': '1',
+  'legal': '2',
+  'placement': '4',
+  'pathology': '5',
+  'pharmacy': '6',
+};
+
 // ===== PROFESSIONAL SERVICES =====
 
 export const searchProfessionals = async (filters = {}) => {
   try {
-    let q = collection(db, 'professionals');
+    let q = collection(db, PROFESSIONALS_COLLECTION);
     const constraints = [];
 
     // Apply filters based on search criteria
@@ -68,8 +81,12 @@ export const searchProfessionals = async (filters = {}) => {
       constraints.push(orderBy('rating', 'desc'));
     }
 
-    // Limit results
-    constraints.push(limit(filters.limit || 50));
+    // Limit results   
+    if (filters.limit && filters.limit > 0) {
+      constraints.push(limit(filters.limit));
+    } else {
+
+    }
 
     q = query(q, ...constraints);
     const snapshot = await getDocs(q);
@@ -100,50 +117,54 @@ export const getProfessionalById = async (professionalId) => {
   }
 };
 
-export const getProfessionalsByCategory = async (category, limitCount = 200) => {
+export const getProfessionalsByCategory = async (category) => {
   try {
     console.log(`Fetching professionals for category: ${category}`);
-
-    // Map category labels to professional_type_id
-    const categoryToTypeId = {
-      'mbbs': '3',
-      'mental': '1',
-      'legal': '2',
-      'placement': '4',
-      'pathology': '5',
-      'pharmacy': '6'
-    };
-
-    const professionalTypeId = categoryToTypeId[category];
+    let professionalTypeId = CATEGORY_TO_TYPE_ID_MAP[category.toLowerCase()];
 
     if (!professionalTypeId) {
-      const snapshot = await getDocs(query(collection(db, 'professionals'), limit(limitCount)));
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    }
 
-    // Query by professional_type_id
-    const q = query(
-      collection(db, 'professionals'),
-      where('professional_type_id', '==', professionalTypeId),
-      // orderBy('rating', 'desc'), 
-      orderBy('professional_type_id'),
-      limit(limitCount)
+      const typeLookupQuery = query(
+        collection(db, PROFESSIONAL_TYPES_COLLECTION),
+        where('name', '==', category.toLowerCase())
+      );
+
+      const typeSnapshot = await getDocs(typeLookupQuery);
+
+      if (typeSnapshot.empty) {
+
+        console.warn(`Category "${category}" not found in professional types (dynamic and map lookup failed). Returning all professionals.`);
+        const allProfessionalsSnapshot = await getDocs(query(collection(db, PROFESSIONALS_COLLECTION)));
+        return allProfessionalsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+      }
+
+      professionalTypeId = typeSnapshot.docs[0].data().type_id;
+    }
+    const stringId = String(professionalTypeId);
+    const numberId = parseInt(professionalTypeId, 10);
+
+    const professionalsQuery = query(
+      collection(db, PROFESSIONALS_COLLECTION),
+      where('professional_type_id', 'in', [stringId, numberId]),
+      // orderBy('rating', 'desc'),      
+      // limit(limitCount)
     );
 
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(professionalsQuery);
+
     const professionals = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
 
-
-    console.log(`Found ${professionals.length} professionals with type_id: ${professionalTypeId}`);
+    console.log(`Found ${professionals.length} professionals with type_id: ${professionalTypeId} for category: ${category}`);
     if (professionals.length > 0) {
       console.log('Sample professional:', professionals[0]);
     }
+
     return professionals;
   } catch (error) {
     console.error('Error getting professionals by category:', error);
@@ -152,15 +173,15 @@ export const getProfessionalsByCategory = async (category, limitCount = 200) => 
 };
 
 // Get all healthcare professionals (doctors)
-export const getAllDoctors = async (limitCount = 50) => {
+export const getAllDoctors = async () => {
   try {
     console.log('Fetching all doctors...');
     const professionalTypeId = '3';
     // Query by professional_type_id = "3" (MBBS/Surgeons)
     const q = query(
-      collection(db, 'professionals'),
+      collection(db, PROFESSIONALS_COLLECTION),
       where('professional_type_id', '==', professionalTypeId),
-      limit(limitCount)
+      // limit(limitCount)
     );
 
     const snapshot = await getDocs(q);

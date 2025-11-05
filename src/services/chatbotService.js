@@ -192,7 +192,7 @@ class ChatbotService {
   // Handle service search queries
   async handleServiceSearch(message, category, filters, userId) {
     try {
-      const professionals = await getProfessionalsByCategory(category, 20);
+      const professionals = await getProfessionalsByCategory(category);
       
       if (professionals.length === 0) {
         return {
@@ -295,8 +295,23 @@ class ChatbotService {
 
     try {
       // Check if user mentioned a specific professional
-      const professionals = await searchProfessionals({ ...filters, limit: 3 });
-      
+      const professionals = await searchProfessionals({ ...filters, limit: 10 });
+      if (!filters.excludeProfessionals) {
+      const professionalsQuery = await searchProfessionals({
+        ...filters,
+        limit: 10 // Increased default limit from 5 to 10
+      });
+      results.professionals = professionalsQuery;
+    }
+
+    // Search jobs
+    if (!filters.excludeJobs) {
+      const jobsQuery = await searchJobs({
+        ...filters,
+        limit: 10 // Increased default limit from 5 to 10
+      });
+      results.jobs = jobsQuery;
+    }
       if (professionals.length === 0) {
         return {
           text: "I'd be happy to help you book an appointment! Let me first show you available professionals. What type of service are you looking for?",
@@ -423,7 +438,7 @@ class ChatbotService {
   async handleGeneralQuery(message, userId) {
     // Try to search across all services
     try {
-      const searchResults = await searchAll(message, { limit: 3 });
+      const searchResults = await searchAll(message, { limit: 20 });
       
       if (searchResults.professionals.length > 0 || searchResults.jobs.length > 0) {
         let responseText = "I found some relevant results for you:\n\n";

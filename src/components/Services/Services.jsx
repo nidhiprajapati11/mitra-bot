@@ -37,38 +37,38 @@ const Services = () => {
       // Fetch real data from Firebase based on service type
       switch (service.id) {
         case 'job_search':
-          results = await searchJobs({ limit: 20 });
+          results = await searchJobs();
           console.log('Job search results:', results);
           break;
           
         case 'general_doctor':
         case 'specialist_care':
-          results = await getProfessionalsByCategory('mbbs', 100);
+          results = await getProfessionalsByCategory('mbbs');
           console.log('Healthcare professionals:', results);
           break;
           
         case 'mental_health':
-          results = await getProfessionalsByCategory('mental', 100);
+          results = await getProfessionalsByCategory('mental');
           console.log('Mental health professionals:', results);
           break;
           
         case 'legal_aid':
-          results = await getProfessionalsByCategory('legal', 100);
+          results = await getProfessionalsByCategory('legal');
           console.log('Legal professionals:', results);
           break;
           
         case 'lab_tests':
-          results = await getProfessionalsByCategory('pathology', 100);
+          results = await getProfessionalsByCategory('pathology');
           console.log('Pathology labs:', results);
           break;
           
         case 'pharmacy':
-          results = await getProfessionalsByCategory('pharmacy', 100);
+          results = await getProfessionalsByCategory('pharmacy');
           console.log('Pharmacies:', results);
           break;
           
         default:
-          results = await searchProfessionals({ limit: 100 });
+          results = await searchProfessionals();
       }
       
       setSearchResults(results);

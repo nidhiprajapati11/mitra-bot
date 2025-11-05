@@ -42,7 +42,8 @@ const Home = () => {
       try {
         const types = await getProfessionalTypes();
         const map = types.reduce((acc, type) => {
-          acc[type.id] = type.title || type.label;
+          // acc[type.id] = type.title || type.label;
+           acc[type.label.toLowerCase()] = type;
           return acc;
         }, {});
         setProfessionalTypesMap(map);
@@ -553,7 +554,7 @@ const Home = () => {
     try {
       // Use 'mbbs' as the category label for doctors/surgeons
       const { getProfessionalsByCategory } = await import('../../services/databaseService');
-      const doctors = await getProfessionalsByCategory('mbbs', 100);
+      const doctors = await getProfessionalsByCategory('mbbs');
 
       console.log('Fetched doctors:', doctors);
 
@@ -572,7 +573,8 @@ const Home = () => {
         // ATTACH TITLE: professional_type_id ko title se map karein
         const doctorsWithTitles = doctors.map(doc => ({
           ...doc,
-          professional_type_label: professionalTypesMap[doc.professional_type_id] || 'Healthcare Professional'
+          // professional_type_label: professionalTypesMap[doc.professional_type_id] || 'Healthcare Professional'
+       professional_type_label: professionalTypesMap[doc.professional_type_id]?.title || 'Healthcare Professional'
         }));
         console.log('Doctors with titles:', doctorsWithTitles);
         addMessage(
@@ -610,7 +612,7 @@ const Home = () => {
     try {
       // Use 'mental' as the category label for mental health professionals
       const { getProfessionalsByCategory } = await import('../../services/databaseService');
-      const counselors = await getProfessionalsByCategory('mental', 100);
+      const counselors = await getProfessionalsByCategory('mental');
 
       console.log('Fetched mental health professionals:', counselors);
 
@@ -629,7 +631,7 @@ const Home = () => {
         // ATTACH TITLE: professional_type_id ko title se map karein
         const counselorsWithTitles = counselors.map(doc => ({
           ...doc,
-          professional_type_label: professionalTypesMap[doc.professional_type_id] || 'Mental Health Professional'
+          professional_type_label: professionalTypesMap[doc.professional_type_id]?.title  || 'Mental Health Professional'
         }));
 
         addMessage(
