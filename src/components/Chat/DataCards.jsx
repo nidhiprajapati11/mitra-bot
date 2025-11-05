@@ -62,7 +62,7 @@ const ProfessionalCard = ({ professional, onBook, onViewDetails }) => {
                   )}
                 </div>
                 {education && (
-                  <p className="text-xs text-gray-600 truncate">{education}</p>
+                  <p className="text-xs text-gray-600 truncate text-wrap">{education}</p>
                 )}
                 {specialization || professionalTypeLabel && (
                   <span className="inline-block mt-1 px-2 py-0.5 bg-primary-50 text-primary-700 rounded text-xs font-medium">
